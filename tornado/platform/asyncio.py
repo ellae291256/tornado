@@ -381,10 +381,10 @@ def to_asyncio_future(tornado_future: asyncio.Future) -> asyncio.Future:
     return convert_yielded(tornado_future)
 
 
-if sys.platform == "win32" and hasattr(asyncio, "WindowsSelectorEventLoopPolicy"):
+if sys.platform == "win32":
     # "Any thread" and "selector" should be orthogonal, but there's not a clean
     # interface for composing policies so pick the right base.
-    _BasePolicy = asyncio.WindowsSelectorEventLoopPolicy  # type: ignore
+    _BasePolicy = asyncio.WindowsProactorEventLoopPolicy  # type: ignore
 else:
     _BasePolicy = asyncio.DefaultEventLoopPolicy
 

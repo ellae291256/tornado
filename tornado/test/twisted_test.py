@@ -20,7 +20,7 @@ from tornado.testing import AsyncTestCase, gen_test
 try:
     from twisted.internet.defer import (  # type: ignore
         inlineCallbacks,
-        returnValue,
+        Return,
     )
 
     have_twisted = True
@@ -43,7 +43,7 @@ class ConvertDeferredTest(AsyncTestCase):
                 # inlineCallbacks doesn't work with regular functions;
                 # must have a yield even if it's unreachable.
                 yield
-            returnValue(42)
+            raise Return(42)
 
         res = yield fn()
         self.assertEqual(res, 42)
