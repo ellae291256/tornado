@@ -66,10 +66,11 @@ class CaresResolver(Resolver):
         if is_valid_ip(host):
             addresses = [host]
         else:
-            # gethostbyname doesn't take callback as a kwarg
+            # getaddrinfo doesn't take callback as a kwarg
             fut = Future()  # type: Future[Tuple[Any, Any]]
-            self.channel.gethostbyname(
-                host, family, lambda result, error: fut.set_result((result, error))
+            self.channel.getaddrinfo(
+                host, port, family, socket.SOCK_STREAM, socket.IPPROTO_TCP,
+                lambda result, error: fut.set_result((result, error))
             )
             result, error = yield fut
             if error:
@@ -77,18 +78,22 @@ class CaresResolver(Resolver):
                     "C-Ares returned error %s: %s while resolving %s"
                     % (error, pycares.errno.strerror(error), host)
                 )
-            addresses = result.addresses
-        addrinfo = []
-        for address in addresses:
-            if "." in address:
-                address_family = socket.AF_INET
-            elif ":" in address:
-                address_family = socket.AF_INET6
-            else:
-                address_family = socket.AF_UNSPEC
-            if family != socket.AF_UNSPEC and family != address_family:
-                raise IOError(
-                    "Requested socket family %d but got %d" % (family, address_family)
-                )
-            addrinfo.append((typing.cast(int, address_family), (address, port)))
+            addrinfo = []
+            for res in result:
+                af, socktype, proto, canonname, sa = res
+                addrinfo.append((af, (sa[0], port)))
+        else:
+            addrinfo = []
+            for address in addresses:
+                if "." in address:
+                    address_family = socket.AF_INET
+                elif ":" in address:
+                    address_family = socket.AF_INET6
+                else:
+                    address_family = socket.AF_UNSPEC
+                if family != socket.AF_UNSPEC and family != address_family:
+                    raise IOError(
+                        "Requested socket family %d but got %d" % (family, address_family)
+                    )
+                addrinfo.append((typing.cast(int, address_family), (address, port)))
         return addrinfo
