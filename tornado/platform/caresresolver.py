@@ -68,8 +68,9 @@ class CaresResolver(Resolver):
         else:
             # gethostbyname doesn't take callback as a kwarg
             fut = Future()  # type: Future[Tuple[Any, Any]]
-            self.channel.gethostbyname(
-                host, family, lambda result, error: fut.set_result((result, error))
+            self.channel.getaddrinfo(
+                host, port, family, socket.SOCK_STREAM, socket.IPPROTO_TCP,
+                lambda result, error: fut.set_result((result, error))
             )
             result, error = yield fut
             if error:
@@ -77,7 +78,9 @@ class CaresResolver(Resolver):
                     "C-Ares returned error %s: %s while resolving %s"
                     % (error, pycares.errno.strerror(error), host)
                 )
-            addresses = result.addresses
+            addresses = []
+            for item in result:
+                addresses.append(item.address)
         addrinfo = []
         for address in addresses:
             if "." in address:
