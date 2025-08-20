@@ -159,7 +159,10 @@ class ThreadedResolverImportTest(unittest.TestCase):
 # C-ares will try to resolve even malformed names, such as the
 # name with spaces used in this test.
 @skipIfNoNetwork
-@unittest.skipIf(pycares is None, "pycares module not present")
+@unittest.skipIf(
+    pycares is None or not hasattr(pycares.Channel, "gethostbyname"),
+    "pycares module not present or incompatible",
+)
 @unittest.skipIf(sys.platform == "win32", "pycares doesn't return loopback on windows")
 @unittest.skipIf(sys.platform == "darwin", "pycares doesn't return 127.0.0.1 on darwin")
 class CaresResolverTest(_ResolverTestMixin):

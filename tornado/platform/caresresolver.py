@@ -66,10 +66,12 @@ class CaresResolver(Resolver):
         if is_valid_ip(host):
             addresses = [host]
         else:
-            # gethostbyname doesn't take callback as a kwarg
             fut = Future()  # type: Future[Tuple[Any, Any]]
-            self.channel.gethostbyname(
-                host, family, lambda result, error: fut.set_result((result, error))
+            self.channel.getaddrinfo(
+                host,
+                None,
+                family=family,
+                callback=lambda result, error: fut.set_result((result, error)),
             )
             result, error = yield fut
             if error:
@@ -77,7 +79,13 @@ class CaresResolver(Resolver):
                     "C-Ares returned error %s: %s while resolving %s"
                     % (error, pycares.errno.strerror(error), host)
                 )
-            addresses = result.addresses
+            addresses = []
+            for node in result.nodes:
+                address = node.addr[0]
+                if isinstance(address, bytes):
+                    address = address.decode("ascii")
+                if address not in addresses:
+                    addresses.append(address)
         addrinfo = []
         for address in addresses:
             if "." in address:
